@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * HTTP Response
+ * Response the data with any http code and any type of response
+ */
+
 namespace Vendor\Http;
 
 class Response

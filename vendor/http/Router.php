@@ -6,13 +6,21 @@ use Vendor\Http\Request;
 
 class Router
 {
-    private $routes = [];
+    private static $routes = [];
+    private $isApi = false;
+
+    public function __construct($isApi = false)
+    {
+        $this->isApi = $isApi;
+    }
 
     public function add($prefix, $methodType = 'GET', $options)
     {
         $arr = explode('@', $options);
 
-        $this->routes[$prefix . '@' . $methodType] = [
+        $prefix = $this->isApi ? '/api' . $prefix : $prefix;
+
+        Router::$routes[$prefix . '@' . $methodType] = [
             'controller' => $arr[0],
             'type' => $methodType,
             'method' => $arr[1]
@@ -21,7 +29,7 @@ class Router
 
     public function has($prefix)
     {
-        foreach($this->routes as $key => $route) {
+        foreach(Router::$routes as $key => $route) {
             if($key == $prefix . '@' . REQUEST_METHOD) {
                 return true;
             }
@@ -66,7 +74,7 @@ class Router
     public function route($prefix)
     {
         if($this->has($prefix)) {
-            $routeData = $this->routes[$prefix . '@' . REQUEST_METHOD];
+            $routeData = Router::$routes[$prefix . '@' . REQUEST_METHOD];
             $controller = $routeData['controller'];
             $method = $routeData['method'];
             $classPath = CONTROLLER_PATH . $controller;

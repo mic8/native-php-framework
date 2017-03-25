@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use Vendor\Database\Builder;
+use App\Http\Controllers\Controller;
+
+use App\Models\User;
 
 class UserController extends Controller
 {
@@ -10,7 +12,7 @@ class UserController extends Controller
 
     public function __construct()
     {
-        $this->user = new Builder('users');
+        $this->user = new User();
     }
 
     public function index()

@@ -8,9 +8,9 @@ class App
 {
     private $router;
 
-    public function __construct(Router $router)
+    public function __construct()
     {
-        $this->router = $router;
+        $this->router = new Router();
 
         $this->init();
     }

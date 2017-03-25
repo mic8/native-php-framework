@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Vendor\Http\Response;
+use Vendor\Http\Binder\Controller as TraitController;
 
 class Controller
 {
-    public function response()
-    {
-        return new Response();
-    }
+    use TraitController;
 }
