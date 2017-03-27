@@ -31,6 +31,57 @@ class Builder
         return $arr;
     }
 
+    private function getFillableParams($params = [])
+    {
+        $keys = [];
+        $values = [];
+
+        foreach($params as $key => $value) {
+            $flag = false;
+            for($i = 0; $i < count($this->fillable); $i++) {
+                $fill = $this->fillable[$i];
+                if($fill == $key) {
+                    $flag = true;
+                }
+            }
+
+            if($flag) {
+                array_push($keys, $key);
+                array_push($values, $value);
+            }
+        }
+
+        return [
+            'keys' => $keys,
+            'values' => $values
+        ];
+    }
+
+    private function updateQuery($key = '', $operator = '', $value = '', $params = [])
+    {
+        $fillable = $this->getFillableParams($params);
+        $keys = $fillable['keys'];
+        $values = $fillable['values'];
+
+        $query = 'UPDATE ' . $this->tableName;
+        $query .= ' SET ';
+
+        for($i = 0; $i < count($keys); $i++) {
+            $keyData = $keys[$i];
+            $valueData = $values[$i];
+
+            if($i == 0) {
+                $query .= $keyData . '=\'' . $valueData . '\'';
+            } else {
+                $query .= ',' . $keyData . '=\'' . $valueData . '\'';
+            }
+        }
+
+        $query .= ' WHERE ' . $key . $operator . '\'' . $value . '\'';
+
+        return $query;
+    }
+
     public function selectRaw($query = '')
     {
         $result = $this->db->query($query);
@@ -68,23 +119,10 @@ class Builder
 
     public function create($params = [])
     {
-        $keys = [];
-        $values = [];
+        $fillable = $this->getFillableParams($params);
 
-        foreach($params as $key => $value) {
-            $flag = false;
-            for($i = 0; $i < count($this->fillable); $i++) {
-                $fill = $this->fillable[$i];
-                if($fill == $key) {
-                    $flag = true;
-                }
-            }
-
-            if($flag) {
-                array_push($keys, $key);
-                array_push($values, $value);
-            }
-        }
+        $keys = $fillable['keys'];
+        $values = $fillable['values'];
 
         $keyJoin = implode(',', $keys);
 
@@ -99,9 +137,9 @@ class Builder
 
         if($created) {
             return $this->last();
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     public function createRaw($query = '')
@@ -126,6 +164,32 @@ class Builder
     }
 
     public function deleteRaw($query = '')
+    {
+        $prepare = $this->db->prepare($query);
+
+        return $prepare->execute();
+    }
+
+    public function fill($params = [])
+    {
+        $this->query = $this->updateQuery($this->primaryKey, '=', $this->get()[0][$this->primaryKey], $params);
+
+        return $this;
+    }
+
+    public function save()
+    {
+        return $this->updateRaw($this->query);
+    }
+
+    public function updateWhere($key = '' , $operator = '', $value = '', $params = [])
+    {
+        $query = $this->updateQuery($key, $operator, $value, $params);
+
+        return $this->updateRaw($query);
+    }
+
+    public function updateRaw($query = '')
     {
         $prepare = $this->db->prepare($query);
 

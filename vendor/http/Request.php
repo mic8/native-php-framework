@@ -28,10 +28,12 @@ class Request
 
     private function getParams()
     {
+        parse_str(file_get_contents('php://input'), $_PATCH);
+
         switch($this->method) {
             case 'GET': return $_GET; break;
             case 'POST': return $_POST; break;
-            case 'PATCH': return $_POST; break;
+            case 'PATCH': return $_PATCH; break;
             case 'PUT': return $_POST; break;
             case 'DELETE': return $_GET; break;
         }

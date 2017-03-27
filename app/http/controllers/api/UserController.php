@@ -53,4 +53,17 @@ class UserController extends Controller
             return $this->response()->json(['success' => false, 'message' => 'Failed to delete user with id: ' . $id], 500);
         }
     }
+
+    public function update($id, Request $request)
+    {
+        $find = $this->user->find($id);
+        $find->fill($request->all());
+        $updated = $find->save();
+
+        if($updated) {
+            return $this->response()->json(['success' => true, 'message' => 'Success update user'], 200);
+        } else {
+            return $this->response()->json(['success' => false, 'message' => 'Failed to update user'], 500);
+        }
+    }
 }
