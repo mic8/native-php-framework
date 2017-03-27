@@ -16,7 +16,7 @@ return [
     'host' => 'localhost',
     'username' => 'root',
     'password' => '',
-    'database' => '2017_project_app_vue',
+    'database' => 'foo',
     'port' => 3306,
     'socket' => ini_get('mysqli.default_socket')
 ];
