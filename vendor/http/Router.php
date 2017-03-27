@@ -6,6 +6,10 @@ use Vendor\Http\Request;
 
 class Router
 {
+    /**
+     * @var array
+     * routes : [prefix => [controller, type, method, hasParams]]
+     */
     private static $routes = [];
     private $isApi = false;
 
@@ -14,24 +18,53 @@ class Router
         $this->isApi = $isApi;
     }
 
+    private function hasParams($prefix, $routeData)
+    {
+        if($routeData['hasParams']) {
+            $exp = explode('/', $prefix);
+            if(count($exp) > 3 && $exp[3] != null && $exp[3] != '') {
+                return $exp[3];
+            } else {
+                throw new \Exception('Route parameter options cannot be null');
+            }
+        }
+
+        return null;
+    }
+
     public function add($prefix, $methodType = 'GET', $options)
     {
         $arr = explode('@', $options);
 
         $prefix = $this->isApi ? '/api' . $prefix : $prefix;
 
+        if($regex = preg_match('/{(?P<params>\w+)}/', $prefix, $matches)) {
+            $prefix = str_replace('/' . $matches[0], null, $prefix);
+        }
+
         Router::$routes[$prefix . '@' . $methodType] = [
             'controller' => $arr[0],
-            'type' => $methodType,
-            'method' => $arr[1]
+            'type' => $methodType == 'SHOW' ? 'GET': $methodType,
+            'method' => $arr[1],
+            'hasParams' => $regex
         ];
     }
 
     public function has($prefix)
     {
         foreach(Router::$routes as $key => $route) {
-            if($key == $prefix . '@' . REQUEST_METHOD) {
-                return true;
+            if(!$route['hasParams']) {
+                if($key == $prefix . '@' . REQUEST_METHOD) {
+                    return $route;
+                }
+            } else {
+                $exp = explode('/', $prefix);
+
+                if(REQUEST_METHOD == 'GET' && $key == '/' . $exp[1] . '/' . $exp[2] . '@SHOW') {
+                    return $route;
+                } else if($key == '/' . $exp[1] . '/' . $exp[2] . '@' . REQUEST_METHOD) {
+                    return $route;
+                }
             }
         }
 
@@ -41,6 +74,11 @@ class Router
     public function get($prefix, $options)
     {
         $this->add($prefix, 'GET', $options);
+    }
+
+    public function show($prefix, $options)
+    {
+        $this->add($prefix, 'SHOW', $options);
     }
 
     public function post($prefix, $options)
@@ -67,14 +105,15 @@ class Router
     {
         $this->get($prefix, $controller . '@index');
         $this->post($prefix, $controller . '@store');
-        $this->patch($prefix, $controller . '@update');
-        $this->delete($prefix, $controller . '@destroy');
+        $this->show($prefix . '/{id}', $controller . '@show');
+        $this->patch($prefix . '/{id}', $controller . '@update');
+        $this->delete($prefix . '/{id}', $controller . '@destroy');
     }
 
     public function route($prefix)
     {
-        if($this->has($prefix)) {
-            $routeData = Router::$routes[$prefix . '@' . REQUEST_METHOD];
+        if($routeData = $this->has($prefix)) {
+            $params = $this->hasParams($prefix, $routeData);
             $controller = $routeData['controller'];
             $method = $routeData['method'];
             $classPath = CONTROLLER_PATH . $controller;
@@ -82,9 +121,17 @@ class Router
                 $class = new $classPath();
                 if(method_exists($class, $method)) {
                     if($routeData['type'] == 'GET') {
-                        $class->$method();
+                        if($params != null && $params) {
+                            $class->$method($params);
+                        } else {
+                            $class->$method();
+                        }
                     } else {
-                        $class->$method(new Request);
+                        if($params != null && $params) {
+                            $class->$method($params, new Request());
+                        } else {
+                            $class->$method(new Request());
+                        }
                     }
                 } else {
                     throw new \Exception('Method ' . $method . ' doesn\'t exists');

@@ -24,8 +24,13 @@ class Model extends Builder
      */
     protected $hidden = [];
 
+    /**
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
     public function __construct()
     {
-        parent::__construct($this->table);
+        parent::__construct($this->table, $this->fillable, $this->hidden, $this->primaryKey);
     }
 }
